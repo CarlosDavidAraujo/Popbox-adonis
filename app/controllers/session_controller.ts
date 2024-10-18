@@ -9,6 +9,6 @@ export default class SessionController {
 
     await auth.use('web').login(user)
 
-    response.redirect('/dashboard')
+    response.redirect('/documents')
   }
 }

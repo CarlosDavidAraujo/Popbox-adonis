@@ -1,57 +1,41 @@
-import Document from '#models/document'
 import { createDocumentValidator } from '#validators/document'
 import type { HttpContext } from '@adonisjs/core/http'
-import { DocumentsList } from '../../resources/views/pages/dashboard/documents-list.js'
+import { DocumentsList } from '../../resources/views/pages/documents/documents-list.js'
 import { HtmxEvents } from '../htmx-events/index.js'
-import Department from '#models/department'
+import { inject } from '@adonisjs/core'
+import FormService from '#services/form_service'
+import { DocumentsPage } from '../../resources/views/pages/documents/page.js'
+import DocumentService from '#services/document_service'
 
+@inject()
 export default class DocumentsController {
-  /**
-   * Display a list of resource
-   */
-  async index({}: HttpContext) {
-    const documents = await Document.all()
-    const departments = await Department.all()
-    return DocumentsList({ documents, departments })
-  }
+  constructor(
+    protected formService: FormService,
+    protected documentService: DocumentService
+  ) {}
 
-  /**
-   * Display form to create a new record
-   */
-  async create({}: HttpContext) {}
+  async create({ request, response }: HttpContext) {
+    const payload = request.all()
+    const form = await this.formService.findOne(payload.formId)
+    const [error, validatedPayload] = await createDocumentValidator(form.fields).tryValidate(
+      payload
+    )
 
-  /**
-   * Handle form submission for the create action
-   */
-  async store({ request, response }: HttpContext) {
-    const { name } = await request.validateUsing(createDocumentValidator)
-    await Document.create({ name })
-    response.append('hx-trigger', HtmxEvents.DOCUMENT_CREATED)
-  }
-
-  /**
-   * Show individual record
-   */
-  async show({ params }: HttpContext) {}
-
-  /**
-   * Edit individual record
-   */
-  async edit({ params }: HttpContext) {}
-
-  /**
-   * Handle form submission for the edit action
-   */
-  async update({ params, request, response }: HttpContext) {
-    const { name } = await request.validateUsing(createDocumentValidator)
-    const document = await Document.findOrFail(params.id)
-    await document.merge({ name }).save()
+    if (validatedPayload) {
+      const { formId, ...metadata } = validatedPayload
+      await this.documentService.create(validatedPayload.formId, metadata)
+    }
 
     response.append('hx-trigger', HtmxEvents.DOCUMENT_CREATED)
   }
 
-  /**
-   * Delete record
-   */
-  async destroy({ params }: HttpContext) {}
+  async displayDocumentsPage() {
+    const forms = await this.formService.findMany()
+    return DocumentsPage({ forms })
+  }
+
+  async displayDocumentsList() {
+    const documents = await this.documentService.findManyBySessionDepartment()
+    return DocumentsList({ documents })
+  }
 }

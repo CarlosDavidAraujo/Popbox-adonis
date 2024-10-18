@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
+import Document from './document.js'
+import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 
 export default class Processing extends BaseModel {
   @column({ isPrimary: true })
@@ -12,9 +14,6 @@ export default class Processing extends BaseModel {
   declare updatedAt: DateTime
 
   @column()
-  declare documentId: number
-
-  @column()
   declare sourceDepartmentId: number
 
   @column()
@@ -25,4 +24,10 @@ export default class Processing extends BaseModel {
 
   @column()
   declare receiverId: number | null
+
+  @column()
+  declare documentId: number
+
+  @belongsTo(() => Document)
+  declare document: BelongsTo<typeof Document>
 }

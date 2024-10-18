@@ -1,3 +1,4 @@
+import { Notifications } from '#components/notifications'
 import Processing from '#models/processing'
 import { createDocumentProcessingValidator } from '#validators/document'
 import type { HttpContext } from '@adonisjs/core/http'
@@ -6,7 +7,10 @@ export default class ProcessingsController {
   /**
    * Display a list of resource
    */
-  async index({}: HttpContext) {}
+  async index({}: HttpContext) {
+    const processings = await Processing.query().preload('document')
+    return Notifications({ documentProcessings: processings })
+  }
 
   /**
    * Display form to create a new record
@@ -27,7 +31,11 @@ export default class ProcessingsController {
   async store({ request, auth }: HttpContext) {
     const input = await request.validateUsing(createDocumentProcessingValidator)
 
-    await Processing.create({ ...input, senderId: auth.user!.id })
+    await Processing.create({
+      ...input,
+      senderId: auth.user!.id,
+      sourceDepartmentId: auth.user?.departmentId!,
+    })
   }
 
   /**
